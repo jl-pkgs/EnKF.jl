@@ -92,40 +92,28 @@ end
 """
     Define action of ENKF on EnsembleState
 """
-function (enkf::ENKF{N,NZ})(t::Float64,
-  Δt::Float64,
+function (enkf::ENKF{N,NZ})(t::Float64, Δt::Float64,
   ens::EnsembleState{N,TS}) where {N,NZ,TS}
 
-  "Propagate each ensemble member"
-  enkf.f(t, ens)
+  enkf.f(t, ens) # Propagate each ensemble member
 
   "Is data assimilation used"
   if enkf.isenkf == true
-    # println("good prop")
-    "Covariance inflation if 'isinflated==true' "
-    if enkf.isinflated == true
-      enkf.A(ens)
-    end
 
-    "State filtering if 'isfiltered==true' "
-    if enkf.isfiltered == true
-      enkf.G(ens)
-    end
-    # println("good filtering")
+    enkf.isinflated && (enkf.A(ens)) # Covariance inflation
+    enkf.isfiltered && (enkf.G(ens)) # State filtering
 
-    "Compute mean and deviation"
     ensfluc = EnsembleState(N, ens.S[1])
-    deviation(ensfluc, ens)
+    deviation(ensfluc, ens) # Compute mean and deviation
 
     A′ = hcat(ensfluc)
 
     " Additional computing for RTPS inflation"
     if typeof(enkf.A) <: Union{RTPSInflation,RTPSAdditiveInflation,RTPSRecipeInflation}
       # correct scaling by 1/N-1 instead of 1/N for small ensembles
-      σᵇ = std(ensfluc.S, corrected=false)
+      σᵇ = std(ensfluc.S; corrected=false)
     end
 
-    # println("good deviation")
     "Compute measurement"
     mens = EnsembleState(N, zeros(NZ))
 
@@ -141,15 +129,12 @@ function (enkf::ENKF{N,NZ})(t::Float64,
 
     "Compute deviation from measurement of the mean"
     Ŝ = mean(deepcopy(ens))
-
     Â′ = Â .- enkf.m(t, Ŝ)
 
-    # println("good deviation mean")
     "Get actual measurement"
     zens = EnsembleState(N, zeros(NZ))
     enkf.z(t + Δt, zens)
     # @show zens
-    # println("good actual measurement")
 
     "Perturb actual measurement"
     enkf.ϵ(zens)
@@ -177,14 +162,12 @@ function (enkf::ENKF{N,NZ})(t::Float64,
     end
 
     "State filtering if 'isfiltered==true' "
-    if enkf.isfiltered == true
-      enkf.G(ens)
-    end
+    enkf.isfiltered && (enkf.G(ens))
 
     " Compute a posteriori covariance"
     deviation(ensfluc, ens)
-
     A′ = hcat(ensfluc)
+
     return t + Δt, ens, A′ * A′'
   else
     return t + Δt, ens
@@ -196,7 +179,6 @@ function ENKF(N, NZ, f, A, G, m, z, ϵ;
   isenkf::Bool=true, isinflated::Bool=false, isfiltered::Bool=false, isaugmented::Bool=false)
   return ENKF{N,NZ}(f, A, G, m, z, ϵ, isenkf, isinflated, isfiltered, isaugmented)
 end
-
 
 # size(enkf::ENKF{N, TS, NZ, TZ}) where {N, TS, NZ, TZ} = (N, size, NZ)
 

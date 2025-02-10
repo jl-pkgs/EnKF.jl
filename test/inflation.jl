@@ -4,7 +4,6 @@ using EnKF
 
 
 @testset "Additive Inflation" begin
-
   T = AdditiveInflation(10)
 
   @test size(T) == (10,)
