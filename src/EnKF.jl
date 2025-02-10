@@ -1,6 +1,10 @@
 module EnKF
 
 using Distributions, Statistics, LinearAlgebra
+export MvNormal, I
+export mean, std
+
+
 import Statistics: mean, var, std, cov
 import Base: size, length, show, hcat, +, -, fill!
 import Distributions
