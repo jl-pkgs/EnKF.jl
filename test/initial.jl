@@ -1,14 +1,9 @@
-using Test
-
 using Distributions, LinearAlgebra, Statistics
-using EnKF
-
+using EnKF, Test
 
 @testset "Initialize" begin
-
-A = MvNormal(zeros(4), I)
-ENS = initialize(10, A)
-
-@test size(ENS) == (10,(4,))
+  A = MvNormal(zeros(4), I)
+  ENS = initialize(10, A)
+  @test size(ENS) == (10, (4,))
 
 end

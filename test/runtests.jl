@@ -1,8 +1,5 @@
-using Test
-
 using Distributions, LinearAlgebra, Statistics
-using EnKF
-
+using EnKF, Test
 
 include("inflation.jl")
 include("state.jl")
