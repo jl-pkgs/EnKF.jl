@@ -9,9 +9,7 @@ using PotentialFlow
 """
 Create a specific structure for EnKF-based Vortex model,
 Darakananda, et al. Data-assimilated low-order vortex modeling of separated flows, APS (2018)
-
 """
-
 
 
 """
@@ -114,8 +112,6 @@ VortexENKFfilter = FilteringFunction()
 
 
 function VortexENKF(N, NZ, ri, m, z, ϵ)
-
 #     return ENKF{N, NZ}(VortexENKFprop, ri, VortexENKFfilter, m, z, ϵ, true, true, true)
-
     return ENKF{N, NZ}(VortexENKFprop, ri, VortexENKFfilter, m, z, ϵ, true, true, true, true);
 end
