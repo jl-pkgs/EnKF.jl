@@ -1,13 +1,4 @@
-
-using Distributions, Statistics, LinearAlgebra
-
-import Base: size, length
-
-import Statistics: mean, var, std
-
-
 export initialize, initialize!
-
 
 
 function initialize(N::Int, Distx0::MultivariateDistribution)

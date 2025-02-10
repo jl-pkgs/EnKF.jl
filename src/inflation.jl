@@ -1,14 +1,3 @@
-
-using Distributions, Statistics, LinearAlgebra
-
-import Base: size, length, *
-
-import Statistics: mean, var, std, cov
-
-import Distributions
-
-import Random: AbstractRNG
-
 export InflationType, IdentityInflation, AdditiveInflation, MultiplicativeInflation,
         MultiAdditiveInflation, TupleProduct, Mixed, ParametersInflation,
         RecipeInflation, RTPSInflation, RTPSAdditiveInflation, RTPSRecipeInflation
@@ -363,7 +352,7 @@ end
 # Define action of RTPSAdditiveInflation before the analysis: x <- x + α
 #
 # """
-function (R::RTPSAdditiveInflation)(ENS::EnsembleState{N, TS}) where {N, TS, T}
+function (R::RTPSAdditiveInflation)(ENS::EnsembleState{N, TS}) where {N, TS}
     # for s in ENS.S
     #     s .+= rand(R.α)
     # end
