@@ -12,6 +12,7 @@ export PropagationFunction,
   FilteringFunction,
   RealMeasurementFunction
 export ENKF
+export initialize, initialize!
 
 struct PropagationFunction end
 struct MeasurementFunction end
@@ -20,9 +21,7 @@ struct RealMeasurementFunction end
 
 
 include("state.jl")
-include("initial.jl")
 include("inflation.jl")
-
 # include("update.jl")
 # include("system.jl")
 # include("stochasticEnKF.jl")
