@@ -101,81 +101,78 @@ function (enkf::ENKF{N,NZ})(t::Float64, Δt::Float64,
 
   enkf.f(t, ens) # Propagate each ensemble member
 
+  !enkf.isenkf && return t + Δt, ens
+
   "Is data assimilation used"
-  if enkf.isenkf == true
+  enkf.isinflated && (enkf.A(ens)) # Covariance inflation
+  enkf.isfiltered && (enkf.G(ens)) # State filtering
 
-    enkf.isinflated && (enkf.A(ens)) # Covariance inflation
-    enkf.isfiltered && (enkf.G(ens)) # State filtering
+  ensfluc = EnsembleState(N, ens.S[1])
+  deviation(ensfluc, ens) # Compute mean and deviation
 
-    ensfluc = EnsembleState(N, ens.S[1])
-    deviation(ensfluc, ens) # Compute mean and deviation
+  A′ = hcat(ensfluc) ## 为何要拼接？
 
-    A′ = hcat(ensfluc)
-
-    " Additional computing for RTPS inflation"
-    if typeof(enkf.A) <: Union{RTPSInflation,RTPSAdditiveInflation,RTPSRecipeInflation}
-      # correct scaling by 1/N-1 instead of 1/N for small ensembles
-      σᵇ = std(ensfluc.S; corrected=false)
-    end
-
-    "Compute measurement"
-    mens = EnsembleState(N, zeros(NZ))
-
-    for (i, s) in enumerate(ens.S)
-      mens.S[i] = enkf.m(t, deepcopy(s))
-    end
-    Â = hcat(deepcopy(mens))
-
-    "Define measurement matrix H for linear observations, can be time-varying"
-    if enkf.isaugmented == false
-      H = deepcopy(enkf.m(t))
-    end
-
-    "Compute deviation from measurement of the mean"
-    Ŝ = mean(deepcopy(ens))
-    Â′ = Â .- enkf.m(t, Ŝ)
-
-    "Get actual measurement"
-    zens = EnsembleState(N, zeros(NZ))
-    enkf.z(t + Δt, zens)
-    # @show zens
-
-    "Perturb actual measurement"
-    enkf.ϵ(zens)
-    D = hcat(zens)
-
-    "Analysis step with representers, Evensen, Leeuwen et al. 1998"
-    "Construct representers"
-    if enkf.isaugmented == true
-      b = ((Â′ * Â′') + (N - 1) * cov(enkf.ϵ) * I) \ (D - Â)
-      Bᵀb = (A′ * Â′') * b
-    else
-      b = (H * (A′ * A′') * H' + (N - 1) * cov(enkf.ϵ) * I) \ (D - Â)
-      Bᵀb = (A′ * A′') * H' * b
-    end
-
-    "Analysis step"
-    ens += cut(Bᵀb)
-
-    " Additional computing for RTPS inflation"
-    if typeof(enkf.A) <: Union{RTPSInflation,RTPSAdditiveInflation,RTPSRecipeInflation}
-      ensfluc = EnsembleState(N, ens.S[1])
-      deviation(ensfluc, ens)
-      σᵃ = std(ensfluc.S, corrected=false)
-      enkf.A(ens, σᵇ, σᵃ)
-    end
-
-    "State filtering if 'isfiltered==true' "
-    enkf.isfiltered && (enkf.G(ens))
-
-    " Compute a posteriori covariance"
-    deviation(ensfluc, ens)
-    A′ = hcat(ensfluc)
-
-    return t + Δt, ens, A′ * A′'
-  else
-    return t + Δt, ens
+  " Additional computing for RTPS inflation"
+  if typeof(enkf.A) <: Union{RTPSInflation,RTPSAdditiveInflation,RTPSRecipeInflation}
+    # correct scaling by 1/N-1 instead of 1/N for small ensembles
+    σᵇ = std(ensfluc.S; corrected=false)
   end
+
+  "Compute measurement"
+  mens = EnsembleState(N, zeros(NZ))
+
+  for (i, s) in enumerate(ens.S)
+    mens.S[i] = enkf.m(t, deepcopy(s)) ## 观测值
+  end
+  Â = hcat(deepcopy(mens))
+
+  "Define measurement matrix H for linear observations, can be time-varying"
+  if enkf.isaugmented == false
+    H = deepcopy(enkf.m(t))
+  end
+
+  "Compute deviation from measurement of the mean"
+  Ŝ = mean(deepcopy(ens))
+  Â′ = Â .- enkf.m(t, Ŝ)
+
+  "Get actual measurement"
+  zens = EnsembleState(N, zeros(NZ))
+  enkf.z(t + Δt, zens)
+  # @show zens
+
+  "Perturb actual measurement"
+  enkf.ϵ(zens)
+  D = hcat(zens)
+
+  "Analysis step with representers, Evensen, Leeuwen et al. 1998"
+  "Construct representers"
+  if enkf.isaugmented == true
+    b = ((Â′ * Â′') + (N - 1) * cov(enkf.ϵ) * I) \ (D - Â)
+    Bᵀb = (A′ * Â′') * b
+  else
+    b = (H * (A′ * A′') * H' + (N - 1) * cov(enkf.ϵ) * I) \ (D - Â)
+    Bᵀb = (A′ * A′') * H' * b
+  end
+
+  "Analysis step"
+  ens += cut(Bᵀb)
+
+  " Additional computing for RTPS inflation"
+  if typeof(enkf.A) <: Union{RTPSInflation,RTPSAdditiveInflation,RTPSRecipeInflation}
+    ensfluc = EnsembleState(N, ens.S[1])
+    deviation(ensfluc, ens)
+    σᵃ = std(ensfluc.S, corrected=false)
+    enkf.A(ens, σᵇ, σᵃ)
+  end
+
+  "State filtering if 'isfiltered==true' "
+  enkf.isfiltered && (enkf.G(ens))
+
+  " Compute a posteriori covariance"
+  deviation(ensfluc, ens)
+  A′ = hcat(ensfluc)
+
+  return t + Δt, ens, A′ * A′'
 end
 
 # Create constructor for ENKF
